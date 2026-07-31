@@ -4,13 +4,43 @@ import { protect, adminOnly } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// Apply protect & adminOnly middleware to all admin routes
+// Public online status endpoint for real-time presence sync
+router.get("/online-mentors", async (req, res) => {
+  try {
+    const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
+    const mentors = await User.find({
+      role: "admin",
+      lastActive: { $gte: threeMinutesAgo },
+    }).select("-password");
+
+    res.json(mentors);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching online presence" });
+  }
+});
+
+// Pulse heartbeat presence
+router.post("/heartbeat", async (req, res) => {
+  try {
+    const { username } = req.body;
+    if (username) {
+      await User.findOneAndUpdate(
+        { username: username.toLowerCase() },
+        { isOnline: true, lastActive: new Date() }
+      );
+    }
+    res.json({ status: "ACK" });
+  } catch (error) {
+    res.status(500).json({ message: "Heartbeat failure" });
+  }
+});
+
+// Apply protect & adminOnly middleware to secure admin routes below
 router.use(protect);
 router.use(adminOnly);
 
 // @route   GET /api/admin/users
 // @desc    Get list of all registered users
-// @access  Private/Admin
 router.get("/users", async (req, res) => {
   try {
     const users = await User.find().select("-password").sort({ createdAt: -1 });
@@ -23,7 +53,6 @@ router.get("/users", async (req, res) => {
 
 // @route   GET /api/admin/stats
 // @desc    Get dashboard statistics for admin mentors
-// @access  Private/Admin
 router.get("/stats", async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
