@@ -5,9 +5,7 @@ import User from "./models/User.js";
 
 dotenv.config();
 
-const MONGO_URI =
-  process.env.MONGO_URI ||
-  "mongodb+srv://panduranga1797_db_user:rr2tjNoUlwPwDi3r@cluster0.elmfhz5.mongodb.net/turingwings?retryWrites=true&w=majority&appName=Cluster0";
+const MONGO_URI = process.env.MONGO_URI;
 
 const seedAdmins = async () => {
   try {
