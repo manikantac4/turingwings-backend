@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import bcrypt from "bcryptjs";
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import chatRoutes from "./routes/chatRoutes.js";
 import User from "./models/User.js";
 
 dotenv.config();
@@ -13,13 +14,15 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
 
-// Middleware
+// Middleware (Support large base64 image uploads up to 20MB)
 app.use(cors({ origin: "*", credentials: true }));
-app.use(express.json());
+app.use(express.json({ limit: "20mb" }));
+app.use(express.urlencoded({ limit: "20mb", extended: true }));
 
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/chat", chatRoutes);
 
 app.get("/", (req, res) => {
   res.json({
@@ -33,10 +36,10 @@ app.get("/", (req, res) => {
 const autoSeedAdmins = async () => {
   try {
     const adminAccounts = [
-      { name: "Ratnakar", username: "ratnakar", email: "ratnakar@turingwings.org", password: "Ratnakar@2026" },
-      { name: "Sahith Akula", username: "sahith", email: "sahith.akula@turingwings.org", password: "Sahith@2026" },
-      { name: "Manoj Kumar", username: "manoj", email: "manoj.kumar@turingwings.org", password: "Manoj@2026" },
-      { name: "Pandu Ranga", username: "panduranga", email: "pandu.ranga@turingwings.org", password: "Pandu@2026" },
+      { name: "Ratnakar Karasala", username: "ratnakar.karasala", email: "ratnakar.karasala@turingwings.org", password: "Ratnakar@2026" },
+      { name: "Sahith Akula", username: "sahith.akula", email: "sahith.akula@turingwings.org", password: "Sahith@2026" },
+      { name: "Manoj Kumar Allu", username: "manoj.allu", email: "manoj.allu@turingwings.org", password: "Manoj@2026" },
+      { name: "Pandu Ranga Tummuri", username: "pandu.tummuri", email: "pandu.tummuri@turingwings.org", password: "Pandu@2026" },
     ];
 
     for (const admin of adminAccounts) {

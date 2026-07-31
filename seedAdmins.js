@@ -17,57 +17,53 @@ const seedAdmins = async () => {
     });
     console.log("Connected to MongoDB successfully!");
 
+    // Delete old admin accounts to ensure clean professional usernames
+    await User.deleteMany({ role: "admin" });
+    console.log("🧹 Deleted old admin accounts from MongoDB.");
+
     const adminAccounts = [
       {
-        name: "Ratnakar",
-        username: "ratnakar",
-        email: "ratnakar@turingwings.org",
+        name: "Ratnakar Karasala",
+        username: "ratnakar.karasala",
+        email: "ratnakar.karasala@turingwings.org",
         password: "Ratnakar@2026",
         role: "admin",
       },
       {
         name: "Sahith Akula",
-        username: "sahith",
+        username: "sahith.akula",
         email: "sahith.akula@turingwings.org",
         password: "Sahith@2026",
         role: "admin",
       },
       {
-        name: "Manoj Kumar",
-        username: "manoj",
-        email: "manoj.kumar@turingwings.org",
+        name: "Manoj Kumar Allu",
+        username: "manoj.allu",
+        email: "manoj.allu@turingwings.org",
         password: "Manoj@2026",
         role: "admin",
       },
       {
-        name: "Pandu Ranga",
-        username: "panduranga",
-        email: "pandu.ranga@turingwings.org",
+        name: "Pandu Ranga Tummuri",
+        username: "pandu.tummuri",
+        email: "pandu.tummuri@turingwings.org",
         password: "Pandu@2026",
         role: "admin",
       },
     ];
 
     for (const admin of adminAccounts) {
-      const existingUser = await User.findOne({
-        $or: [{ username: admin.username }, { email: admin.email }],
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(admin.password, salt);
+
+      await User.create({
+        ...admin,
+        password: hashedPassword,
       });
-
-      if (!existingUser) {
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(admin.password, salt);
-
-        await User.create({
-          ...admin,
-          password: hashedPassword,
-        });
-        console.log(`✅ Admin account created for ${admin.name} (${admin.username})`);
-      } else {
-        console.log(`ℹ️ Admin account already exists for ${admin.name} (${admin.username})`);
-      }
+      console.log(`✅ Professional Admin Account Created: ${admin.name} (Username: ${admin.username})`);
     }
 
-    console.log("🎉 Admin seeding completed successfully!");
+    console.log("🎉 Professional Admin Seeding Completed Successfully!");
     process.exit(0);
   } catch (error) {
     console.error("❌ Error seeding admin accounts:", error);
