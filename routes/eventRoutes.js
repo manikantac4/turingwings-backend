@@ -3,7 +3,6 @@ import Event from "../models/Event.js";
 
 const router = express.Router();
 
-// Helper: Slugify title
 const slugify = (text) =>
   text
     .toString()
@@ -13,13 +12,13 @@ const slugify = (text) =>
     .replace(/[^\w\-]+/g, "")
     .replace(/\-\-+/g, "-");
 
-// GET /api/events - Public published events
+// GET /api/events - Public published events list
 router.get("/", async (req, res) => {
   try {
-    const events = await Event.find({ status: { $ne: "Archived" } }).sort({ createdAt: -1 });
+    const events = await Event.find({ eventStatus: { $ne: "Archived" } }).sort({ createdAt: -1 });
     res.json(events);
   } catch (error) {
-    res.status(500).json({ message: "Error fetching events" });
+    res.status(500).json({ message: "Error fetching public events" });
   }
 });
 
@@ -60,70 +59,64 @@ router.get("/:slug", async (req, res) => {
   }
 });
 
-// POST /api/events - Create new event (Admin Event Generation Wizard)
+// POST /api/events - Create new event (Admin Event Generator Wizard)
 router.post("/", async (req, res) => {
   try {
-    const { title, tagline, eventType, templateId, mode, startDate, endDate, prizePool, venue, description } = req.body;
+    const { title, tagline, eventType, templateId, mode, prizePool, venue, shortDescription } = req.body;
 
-    let slug = slugify(title);
+    let slug = slugify(title || "Buildathon Event");
     const existing = await Event.findOne({ slug });
     if (existing) {
       slug = `${slug}-${Date.now().toString().slice(-4)}`;
     }
 
     const defaultTracks = [
-      { id: "1", title: "AI & Machine Learning Swarms", description: "Build autonomous multi-agent systems and LLM workflows.", prize: "$4,000" },
-      { id: "2", title: "Full-Stack Web3 & Spatial UI", description: "Create high-performance web applications and glassmorphism systems.", prize: "$3,500" },
-      { id: "3", title: "Cybersecurity & Zero-Trust Defense", description: "Offensive security tools and automated vulnerability scanners.", prize: "$2,500" },
+      { id: "1", name: "AI & Machine Learning Swarms", description: "Build autonomous multi-agent systems and LLM workflows.", prize: "$4,000", problemDomain: "Artificial Intelligence" },
+      { id: "2", name: "Full-Stack Web3 & Spatial UI", description: "Create high-performance web applications and glassmorphism systems.", prize: "$3,500", problemDomain: "Web Development" },
+      { id: "3", name: "Cybersecurity & Zero-Trust Shield", description: "Offensive security tools and automated vulnerability scanners.", prize: "$2,500", problemDomain: "Cybersecurity" },
     ];
 
     const defaultTimeline = [
-      { id: "1", stage: "Registration Opens", date: startDate || "Immediate", description: "Participant applications and team formation begin." },
-      { id: "2", stage: "Orientation & Mentor Session", date: "Day 1", description: "Live kickoff, mentor introductions, and track briefings." },
-      { id: "3", stage: "Hacking & Build Sprint", date: "Day 2", description: "Build sprint with continuous mentor assistance." },
-      { id: "4", stage: "Final Submission & Demo Day", date: endDate || "Final Day", description: "Project submission, live video presentations, and judge review." },
-      { id: "5", stage: "Results & Certificate Release", date: "Post Event", description: "Winner announcement and digital certificate distribution." },
+      { id: "1", milestoneName: "Registration Opens", date: "August 25, 2026", time: "09:00 AM", description: "Participant applications and team formation begin.", status: "Completed" },
+      { id: "2", milestoneName: "Orientation & Briefing", date: "August 28, 2026", time: "10:00 AM", description: "Live kickoff, mentor introductions, and track briefings.", status: "Upcoming" },
+      { id: "3", milestoneName: "Problem Statement Release", date: "August 28, 2026", time: "11:00 AM", description: "Official problem statements unlocked for all teams.", status: "Upcoming" },
+      { id: "4", milestoneName: "Final Submission Deadline", date: "August 30, 2026", time: "06:00 PM", description: "GitHub repository and video demo submission.", status: "Upcoming" },
+      { id: "5", milestoneName: "Results & Certificate Release", date: "September 02, 2026", time: "05:00 PM", description: "Winner announcement and digital certificate distribution.", status: "Upcoming" },
     ];
 
     const defaultJudges = [
-      { name: "Ratnakar Karasala", role: "Cybersecurity Lead Mentor", company: "Turing Wings HQ", avatar: "R" },
-      { name: "Sahith Akula", role: "Backend Lead Mentor", company: "Turing Wings HQ", avatar: "S" },
-      { name: "Manoj Kumar Allu", role: "Growth & Strategy Lead", company: "Turing Wings HQ", avatar: "M" },
-      { name: "Pandu Ranga Tummuri", role: "Frontend & Spatial UI Lead", company: "Turing Wings HQ", avatar: "P" },
-    ];
-
-    const defaultFaqs = [
-      { question: "Who is eligible to participate?", answer: "Students, developers, designers, and creators worldwide can participate individually or in teams." },
-      { question: "Is there any registration fee?", answer: "No, all Turing Wings Buildathons and Hackathons are 100% free of cost." },
-      { question: "Can I form a team with members from different colleges?", answer: "Yes, cross-institution and global team formations are fully permitted." },
+      { id: "1", name: "Ratnakar Karasala", designation: "Cybersecurity Lead Mentor", organization: "Turing Wings HQ", bio: "Penetration testing & Zero-Trust security lead.", photo: "R" },
+      { id: "2", name: "Sahith Akula", designation: "Backend Lead Mentor", organization: "Turing Wings HQ", bio: "Multi-agent systems & microservices architect.", photo: "S" },
+      { id: "3", name: "Manoj Kumar Allu", designation: "Growth & Strategy Lead", organization: "Turing Wings HQ", bio: "Product architecture & venture scaling mentor.", photo: "M" },
+      { id: "4", name: "Pandu Ranga Tummuri", designation: "Frontend & Spatial UI Lead", organization: "Turing Wings HQ", bio: "60 FPS HTML5 canvas & spatial UX specialist.", photo: "P" },
     ];
 
     const newEvent = await Event.create({
-      title,
+      title: title || "New Turing Wings Buildathon",
       slug,
-      tagline: tagline || "Accelerate your build velocity with Turing Wings",
       eventType: eventType || "Buildathon",
-      mode: mode || "Online",
-      status: "Registration Open",
       templateId: templateId || "ai-future",
-      startDate: startDate || "August 2026",
-      endDate: endDate || "September 2026",
-      prizePool: prizePool || "$10,000 USD",
-      venue: venue || "Turing Wings Virtual Portal",
-      description: description || "Join thousands of creators in this high-octane buildathon.",
-      tracks: req.body.tracks || defaultTracks,
-      timeline: req.body.timeline || defaultTimeline,
-      judges: req.body.judges || defaultJudges,
-      mentors: req.body.mentors || defaultJudges,
-      faqs: req.body.faqs || defaultFaqs,
-      registrationConfig: req.body.registrationConfig || {
-        allowIndividual: true,
-        allowTeam: true,
-        minTeamSize: 1,
-        maxTeamSize: 4,
-        requireGitHub: true,
+      tagline: tagline || "Build, Deploy & Accelerate Velocity with Turing Wings",
+      shortDescription: shortDescription || "Join thousands of visionary creators in this high-octane buildathon.",
+      mode: mode || "Online",
+      prizes: { prizePool: prizePool || "$10,000 USD", winnerPrize: "$5,000", runnerUpPrize: "$3,000", secondRunnerUpPrize: "$2,000" },
+      schedule: {
+        regStartDate: "August 20, 2026",
+        regEndDate: "August 28, 2026",
+        eventStartDate: "August 28, 2026",
+        eventEndDate: "August 30, 2026",
+        submissionDeadline: "August 30, 2026 (06:00 PM)",
+        resultsDate: "September 02, 2026",
       },
-      createdBy: req.body.createdBy || "Lead Mentor Admin",
+      tracks: req.body.tracks || defaultTracks,
+      timelineMilestones: req.body.timelineMilestones || defaultTimeline,
+      judges: defaultJudges,
+      mentors: defaultJudges,
+      faqs: [
+        { id: "1", question: "Who is eligible to participate?", answer: "Students, developers, designers, and creators worldwide can participate individually or in teams." },
+        { id: "2", question: "Is there any registration fee?", answer: "No, all Turing Wings Buildathons are 100% free of cost." }
+      ],
+      createdBy: req.body.createdBy || "Lead Mentor Admin"
     });
 
     res.status(201).json(newEvent);
@@ -133,7 +126,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// PUT /api/events/admin/:id - Update event details, template, or lifecycle status
+// PUT /api/events/admin/:id - Update all 20 sections of an event
 router.put("/admin/:id", async (req, res) => {
   try {
     const updated = await Event.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -154,23 +147,26 @@ router.delete("/admin/:id", async (req, res) => {
   }
 });
 
-// POST /api/events/:slug/register - Register for event
+// POST /api/events/:slug/register - Register participant/team for event
 router.post("/:slug/register", async (req, res) => {
   try {
-    const { name, email, role, teamName, github } = req.body;
+    const { name, email, phone, college, department, year, github, linkedin, portfolio, teamName, role } = req.body;
     const eventItem = await Event.findOne({ slug: req.params.slug });
 
     if (!eventItem) return res.status(404).json({ message: "Event not found" });
-    if (eventItem.status === "Registration Closed") {
-      return res.status(400).json({ message: "Registration for this event is closed." });
-    }
 
     eventItem.participants.push({
       name,
       email,
-      role: role || "Developer",
-      teamName: teamName || "Solo Builder",
+      phone: phone || "",
+      college: college || "",
+      department: department || "",
+      year: year || "",
       github: github || "",
+      linkedin: linkedin || "",
+      portfolio: portfolio || "",
+      teamName: teamName || "Solo Builder",
+      role: role || "Developer",
       registeredAt: new Date(),
     });
 
