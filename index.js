@@ -11,13 +11,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-<<<<<<< HEAD
-const MONGO_URI =
-  process.env.MONGO_URI ||
-  "mongodb+srv://panduranga1797_db_user:rr2tjNoUlwPwDi3r@cluster0.elmfhz5.mongodb.net/turingwings?retryWrites=true&w=majority&appName=Cluster0";
-=======
 const MONGO_URI = process.env.MONGO_URI;
->>>>>>> ba9af84 (Initial clean commit without hardcoded secrets)
 
 // Middleware
 app.use(cors({ origin: "*", credentials: true }));
