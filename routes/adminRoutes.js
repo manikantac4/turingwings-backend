@@ -1,5 +1,6 @@
 import express from "express";
 import User from "../models/User.js";
+import Call from "../models/Call.js";
 import { protect, adminOnly } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -32,6 +33,41 @@ router.post("/heartbeat", async (req, res) => {
     res.json({ status: "ACK" });
   } catch (error) {
     res.status(500).json({ message: "Heartbeat failure" });
+  }
+});
+
+// GET active meeting calls for logged-in mentors
+router.get("/calls", async (req, res) => {
+  try {
+    const activeCalls = await Call.find({ active: true }).sort({ createdAt: -1 });
+    res.json(activeCalls);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching active calls" });
+  }
+});
+
+// POST start active meeting call
+router.post("/calls", async (req, res) => {
+  try {
+    const { hostName, hostUsername, roomId } = req.body;
+    // Deactivate previous calls by host
+    await Call.updateMany({ hostUsername }, { active: false });
+
+    const newCall = await Call.create({ hostName, hostUsername, roomId, active: true });
+    res.json(newCall);
+  } catch (error) {
+    res.status(500).json({ message: "Error starting call" });
+  }
+});
+
+// POST end active meeting call
+router.post("/calls/end", async (req, res) => {
+  try {
+    const { hostUsername, roomId } = req.body;
+    await Call.updateMany({ $or: [{ hostUsername }, { roomId }] }, { active: false });
+    res.json({ status: "ENDED" });
+  } catch (error) {
+    res.status(500).json({ message: "Error ending call" });
   }
 });
 
