@@ -265,7 +265,13 @@ router.post("/:id/register", async (req, res) => {
       return res.status(400).json({ message: "Full Name and Email are required" });
     }
 
-    const event = await Event.findById(req.params.id);
+    let event;
+    if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      event = await Event.findById(req.params.id);
+    }
+    if (!event) {
+      event = await Event.findOne({ slug: req.params.id });
+    }
     if (!event) {
       return res.status(404).json({ message: "Event not found" });
     }
